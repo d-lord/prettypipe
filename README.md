@@ -4,12 +4,7 @@ Does one thing, and does it ~well~ poorly.
 
 It will run a command for you and print its stdout and stderr in different colours (green and red).
 
-```
-$ prettypipe cat file1.txt file2.txt
-<prints both files, in green>
-$ prettypipe curl https://google.com
-<prints the page's content in green and curl's progress info in red>
-```
+![Screenshot showing 'curl https://google.com' with green HTML and red progress info.](screenshot.png)
 
 ## Installation
 
