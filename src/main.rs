@@ -5,7 +5,7 @@ use nix::sys::select::{FdSet, select};
 use std::collections::HashMap;
 
 extern crate clap;
-use clap::{Arg, App};
+use clap::{Arg, App, AppSettings};
 
 fn main() {
     let matches = App::new("PrettyPipe")
@@ -17,6 +17,7 @@ fn main() {
         .arg(Arg::with_name("args")
              .required(false)
              .multiple(true))
+        .setting(AppSettings::TrailingVarArg)
         .get_matches();
     let cmd = matches.value_of("program").unwrap(); // safe; clap required it
     let args: Vec<&str> = match matches.values_of("args") {
