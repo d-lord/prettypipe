@@ -28,7 +28,7 @@ fn main() {
     // spawn a process which prints to both stdout and stderr, just for testing
     #[cfg(debug_assertions)] { println!("Command: \"{}\" {:?}", cmd, args); }
     let process = Command::new(cmd)
-        .args(args.clone()) // maybe inelegant. required by error handling below so we can't give ownership of the only copy to the Command.
+        .args(&args)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn();
