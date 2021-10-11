@@ -1,21 +1,41 @@
 use std::io::{Read, Write};
-use std::process::{Command, Stdio};
+use std::process::{Command, Stdio, exit};
 use std::os::unix::io::{AsRawFd, RawFd};
 use nix::sys::select::{FdSet, select};
 use std::collections::HashMap;
 
+extern crate clap;
+use clap::{Arg, App};
+
 fn main() {
+    let matches = App::new("PrettyPipe")
+        .version("1.0")
+        .about("Prints stdout and stderr in different colours.")
+        .arg(Arg::with_name("program")
+             .help("The main program to spawn.")
+             .required(true))
+        .arg(Arg::with_name("args")
+             .required(false)
+             .multiple(true))
+        .get_matches();
+    let cmd = matches.value_of("program").unwrap(); // safe; clap required it
+    let args: Vec<&str> = match matches.values_of("args") {
+        Some(values) => values.collect(),
+        None => vec![]
+    };
+
     // spawn a process which prints to both stdout and stderr, just for testing
-    let (cmd, args) = ("curl", ["https://www.auscert.org.au"]);
     #[cfg(debug_assertions)] { println!("Command: \"{}\" {:?}", cmd, args); }
-    let process = match Command::new(cmd)
-        .args(args)
+    let process = Command::new(cmd)
+        .args(args.clone()) // maybe inelegant. required by error handling below so we can't give ownership of the only copy to the Command.
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
-        .spawn() {
-        Err(why) => panic!("couldn't spawn printer: {}", why),
-        Ok(process) => process,
-    };
+        .spawn();
+    if process.is_err() {
+        eprintln!("Error running \"{} {:?}\": {}", cmd, args, process.err().unwrap());
+        exit(1);
+    }
+    let process = process.ok().unwrap();
 
     // FDs that select() should read.
     // NB: select() mutates its input FDSets.
