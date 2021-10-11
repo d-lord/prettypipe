@@ -7,7 +7,7 @@ use std::collections::HashMap;
 fn main() {
     // spawn a process which prints to both stdout and stderr, just for testing
     let (cmd, args) = ("curl", ["https://www.auscert.org.au"]);
-    println!("Command: \"{}\" {:?}", cmd, args);
+    #[cfg(debug_assertions)] { println!("Command: \"{}\" {:?}", cmd, args); }
     let process = match Command::new(cmd)
         .args(args)
         .stdout(Stdio::piped())
@@ -30,14 +30,13 @@ fn main() {
     // this is kind of academic anyway since we need to read into it later
     let child_stdout = process.stdout.expect("Could not open child stdout");
     let child_stdout_raw_fd = child_stdout.as_raw_fd();
-    dbg!(child_stdout_raw_fd);
+    #[cfg(debug_assertions)] { dbg!(child_stdout_raw_fd); }
     master_fd_set.insert(child_stdout_raw_fd);
 
     let child_stderr = process.stderr.expect("Could not open child stderr");
     let child_stderr_raw_fd = child_stderr.as_raw_fd();
-    dbg!(child_stderr_raw_fd);
+    #[cfg(debug_assertions)] { dbg!(child_stderr_raw_fd); }
     master_fd_set.insert(child_stderr_raw_fd);
-
 
     // map RawFd to a ChildStd(out|err) for reading
     // because it's easier to read the Child* structs than open a File from the RawFd
@@ -54,33 +53,32 @@ fn main() {
     while master_fd_set.fds(None).count() > 0 {
         let _ = select(None, &mut master_fd_set.clone(), None, None, None); // blocks until one or more is ready
         for fd in master_fd_set.fds(None) {
-            println!("fd {:?} is ready for I/O", fd);
+            #[cfg(debug_assertions)] { println!("fd {:?} is ready for I/O", fd); }
             let stream = stream_map.get_mut(&fd).unwrap();
             let bytes_read = match stream.read_to_string(&mut buf) {
                 Err(why) => panic!("Error reading from stdout: {}", why),
                 Ok(bytes_read) => bytes_read,
             };
-            println!("Read {:?} bytes OK", bytes_read);
+            #[cfg(debug_assertions)] { println!("Read {:?} bytes OK", bytes_read); }
             if bytes_read == 0 {
                 // signals that the pipe was closed at the other end. if it's possible to close our
                 // end, here is where we'd do it, but it doesn't seem to be available
                 fds_to_remove.push(fd);
-                println!("fd {} sealed its fate", fd);
+                #[cfg(debug_assertions)] { println!("fd {} sealed its fate", fd); }
             } else {
                 let colour = if fd == child_stdout_raw_fd { "\x1B[32m" }
                 else if fd == child_stderr_raw_fd { "\x1B[31m" }
                 else { "\x1B0m" };
-                // println!("contents: {}{:?}\x1B[0m", colour, buf); // better debugging
                 print!("{}{}\x1B[0m", colour, buf);
             }
             buf.clear();
             std::io::stdout().flush().expect("Error flushing stdout");
         }
         for fd in &fds_to_remove {
-            println!("Dropping closed FD {}", fd);
+            #[cfg(debug_assertions)] { println!("Dropping closed FD {}", fd); }
             master_fd_set.remove(*fd);
         }
         fds_to_remove.clear();
     }
-    println!("All done");
+    #[cfg(debug_assertions)] { println!("All done"); }
 }
