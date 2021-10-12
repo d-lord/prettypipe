@@ -8,7 +8,9 @@ It will run a command for you and print its stdout and stderr in different colou
 
 ## Installation
 
-Look, I don't know how to Rust.
+Only works on \*nixes - tested on macOS and Ubuntu.
+
+Releases are available from GitHub's release tab, or to build it yourself:
 
 ```
 $ cargo build --release
