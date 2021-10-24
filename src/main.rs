@@ -7,7 +7,7 @@ use std::collections::HashMap;
 extern crate clap;
 use clap::{Arg, App, AppSettings};
 
-fn main() {
+fn main() -> std::io::Result<()> {
     let matches = App::new("PrettyPipe")
         .version("1.0")
         .about("Prints stdout and stderr in different colours.")
@@ -36,7 +36,7 @@ fn main() {
         eprintln!("Error running \"{} {:?}\": {}", cmd, args, process.err().unwrap());
         exit(1);
     }
-    let process = process.ok().unwrap();
+    let mut process = process.ok().unwrap();
 
     // FDs that select() should read.
     // NB: select() mutates its input FDSets.
@@ -102,4 +102,6 @@ fn main() {
         fds_to_remove.clear();
     }
     #[cfg(debug_assertions)] { println!("All done"); }
+    process.wait()?;
+    Ok(())
 }
